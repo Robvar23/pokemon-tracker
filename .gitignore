@@ -1,0 +1,17 @@
+# Personal files: passwords, webhook link, login, history
+config.json
+config.json.tmp
+state.json
+state.json.tmp
+settings.txt
+urls.txt
+tracker.log
+chrome-profile/
+# Python / builds
+.venv/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+.DS_Store
