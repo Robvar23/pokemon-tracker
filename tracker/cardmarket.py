@@ -148,19 +148,28 @@ def _labels(row):
     return out
 
 
+LOAD_MORE = "//button[@id='loadMoreButton' or contains(.,'Show more results') or contains(.,'Load more')]"
+
+
 def press_load_more(driver, times, log):
     for _ in range(max(0, int(times or 0))):
-        btns = [b for b in driver.find_elements(
-            By.XPATH, "//button[@id='loadMoreButton' or contains(.,'Show more results') or contains(.,'Load more')]")
-            if b.is_displayed()]
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        try:   # the button can take a moment to appear after the page loads
+            WebDriverWait(driver, 8).until(lambda d: any(b.is_displayed() for b in d.find_elements(By.XPATH, LOAD_MORE)))
+        except TimeoutException:
+            return
+        btns = [b for b in driver.find_elements(By.XPATH, LOAD_MORE) if b.is_displayed()]
         if not btns:
             return
         try:
             driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btns[0])
             time.sleep(1)
+            before = len(driver.find_elements(By.XPATH, "//div[contains(@class,'article-row')]"))
             btns[0].click()
-            time.sleep(3)
-        except WebDriverException:
+            WebDriverWait(driver, 15).until(
+                lambda d: len(d.find_elements(By.XPATH, "//div[contains(@class,'article-row')]")) > before)
+            time.sleep(1)
+        except (WebDriverException, TimeoutException):
             return
 
 

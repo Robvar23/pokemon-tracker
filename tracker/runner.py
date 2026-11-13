@@ -37,6 +37,7 @@ def load_state():
         s = {}
     s.setdefault("seen", {})
     s.setdefault("matches", [])
+    s.setdefault("depth", {})   # how many listings of each card we've been able to see so far
     return s
 
 
@@ -78,13 +79,16 @@ def check_card(driver, cfg, card, state):
         return
 
     first_time = key not in state["seen"]
+    # Listings further down the page than we've ever been able to load before aren't new,
+    # we just couldn't see them last time ("Show more results" didn't load). Remember them quietly.
+    depth = int(state["depth"].get(key, 0))
     seen = set(state["seen"].get(key, []))
     seen_list = state["seen"].setdefault(key, [])
-    with_comment = new = alerts = 0
+    with_comment = new = alerts = newly_loaded = 0
     cart_default = bool(cfg.get("default_add_to_cart"))
     to_cart = cart_default if card.get("add_to_cart") is None else bool(card["add_to_cart"])
 
-    for row in rows:
+    for i, row in enumerate(rows):
         try:
             d = cm.read_listing(row)
         except WebDriverException as e:
@@ -98,6 +102,9 @@ def check_card(driver, cfg, card, state):
         seen.add(k)
         seen_list.append(k)
         if first_time and not cfg.get("alert_existing_on_start"):
+            continue
+        if not first_time and i >= depth:
+            newly_loaded += 1
             continue
         new += 1
         ok, matched, reason = evaluate(cfg, card, d)
@@ -120,7 +127,10 @@ def check_card(driver, cfg, card, state):
         state["matches"].append({"time": datetime.now().isoformat(timespec="seconds"), "card": title,
                                  "url": url, "listing": d, "keywords": matched, "carted": carted, "sent": sent})
 
+    state["depth"][key] = max(depth, len(rows))
     note = " (first look: remembering what's already listed)" if first_time and not cfg.get("alert_existing_on_start") else ""
+    if newly_loaded:
+        note += f" ({newly_loaded} older listings further down loaded for the first time, not alerted)"
     log(f"  {title}: {len(rows)} listings, {with_comment} with a comment, {new} new, {alerts} matches{note}")
 
 
