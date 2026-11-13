@@ -87,3 +87,11 @@ def test_condition_names():
     assert condition_code("Near Mint") == "NM"
     assert condition_code("nm") == "NM"
     assert condition_code("Light Played") == "LP"
+
+
+def test_mint_is_not_near_mint():
+    assert found_words("Near Mint, fast shipping", ["Mint"]) == []
+    assert found_words("near-mint copy", ["Mint"]) == []
+    assert found_words("Psa 10, mint , fast ship !", ["Mint"]) == ["Mint"]
+    assert found_words("Mint condition, near mint corners", ["Mint"]) == ["Mint"]
+    assert found_words("Near Mint", ["Near Mint"]) == ["Near Mint"]

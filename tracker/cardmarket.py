@@ -189,9 +189,10 @@ def get_rows(driver):
 
 def _comment(row):
     texts = []
+    # Only the seller-comment part of the row; never the condition / language / price columns.
     for xp in (".//div[contains(@class,'product-comments')]",
                ".//*[contains(@class,'product-comments')]//span",
-               ".//*[contains(@class,'comment')]"):
+               ".//*[contains(@class,'comment') and not(contains(@class,'condition'))]"):
         try:
             for el in row.find_elements(By.XPATH, xp):
                 t = " ".join((el.get_attribute("textContent") or "").split())
@@ -201,6 +202,9 @@ def _comment(row):
                         texts.append(cand)
         except WebDriverException:
             pass
+    # Never let a condition or language label count as a comment.
+    labels = {n.lower() for n in COND_NAMES.values()} | {c.lower() for c in COND_NAMES}
+    texts = [t for t in texts if t.lower() not in labels and not language_name(t)]
     # The full comment is the longest text we found (the visible one may be cut off with "...").
     return max(texts, key=len) if texts else ""
 

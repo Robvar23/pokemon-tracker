@@ -36,9 +36,11 @@ def language_name(text):
 
 
 def word_regex(word):
-    """Whole-word, case-insensitive: 'PSA 10 candidate' doesn't match 'PSA 100 candidate'."""
+    """Whole-word, case-insensitive: 'PSA 10 candidate' doesn't match 'PSA 100 candidate'.
+    'Mint' on its own never matches the 'Mint' in 'Near Mint' / 'near-mint'."""
     parts = [re.escape(p) for p in word.strip().split()]
-    return re.compile(r"(?<!\w)" + r"\s+".join(parts) + r"(?!\w)", re.IGNORECASE)
+    not_near = r"(?<!near\s)(?<!near-)" if word.strip().lower() == "mint" else ""
+    return re.compile(r"(?<!\w)" + not_near + r"\s+".join(parts) + r"(?!\w)", re.IGNORECASE)
 
 
 def found_words(text, words):
